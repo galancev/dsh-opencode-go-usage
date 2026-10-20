@@ -1,6 +1,6 @@
 # @astervolans/dsh-opencode-go-usage
 
-[English](README.md) | 中文
+[English](README.md) | 中文 | [Русский](README.ru.md)
 
 > ⚡ **OpenCode GO 套餐**: [buycodingplan.com](https://buycodingplan.com/)
 
@@ -9,15 +9,19 @@
 > 发布为 scoped 包 `@astervolans/dsh-opencode-go-usage`。相对上游的差异:**每条用量进度条下方新增一条时间进度条**(见「功能」)。
 > 插件的设置命名空间、HTTP 路由与命令名仍是 `dsh-opencode-go-usage`(不变),所以从上游迁移过来无需改动配置;
 > 仅 `dsh.bundle.patch` 的 `name` 必须是可解析的包名(scoped),否则 `dsh web` 会在启动时报 `Cannot find package`。
+>
+> **本地布局改动(1.6.0):** 常驻侧边栏小组件已移除。会话统计条上新增一个紧凑的 **GO** 按钮(位于余额胶囊左侧);用量卡片改为浮动弹窗(悬停打开、点击固定)。手动 **刷新** 按钮已删除——启动时读取一次,卡片以过期数据打开时立即刷新,卡片打开期间每 **5 分钟** 轮询一次。
 
 [DSH](https://github.com/deepseek-ai/deepseek-harness)(DeepSeek Harness)插件:监控你的 **OpenCode GO 套餐**额度 —— 10 美元/月的订阅,按模型提供滚动 5 小时 / 每周 / 每月三个窗口的用量限额。
 
 兼容 DSH `0.1.7` 及以上(含 `0.2.0` 线) —— 已写入 `peerDependencies`(`>=0.1.7-rc.1 <0.3.0`),
-由 DSH 校验。版本矩阵、1.5.0 的改动,以及其他运行时怎么办,见[兼容性](#兼容性)。
+由 DSH 校验。版本矩阵、1.6.0 的改动,以及其他运行时怎么办,见[兼容性](#兼容性)。
 
 ## 功能
 
-- **侧边栏小组件**:常驻 DSH Web 侧边栏底部(`sidebar.footer.action` 槽位),三条用量进度条:滚动窗口(5h)、周窗口、月窗口,每条带重置倒计时;侧边栏收起时收缩为紧凑的百分比徽标。
+- **composer dock 里的 GO 按钮**:与会话统计、余额胶囊同一行(conversation.composer.dock 槽位,order: 1.5,即余额胶囊左侧),不再占用侧边栏。悬停打开浮动用量卡片,点击按钮固定弹窗(再次点击、Esc 或点击外部关闭);键盘聚焦也会打开。按钮通过 `aria-label`/`title` 暴露月窗口百分比。
+- **用量卡片**:滚动窗口(5h)、周窗口、月窗口三条用量进度条,每条带重置倒计时和下方的时间条(见下文)。弹窗锚定按钮、限制在视口内、在 resize/scroll 时重新定位,上方空间不足时翻到按钮下方;标题栏仍显示匿名版本更新徽标。
+- **自动刷新,无刷新按钮**:entry 挂载时读取一次(按钮 tooltip 立即可用),卡片以超过 5 分钟的快照打开时立即重读,卡片打开期间每 **5 分钟** 轮询一次;卡片关闭后保留上次快照,不再请求。
 - **时间进度条**:每条用量条下方还有一条时间条,把本窗口的时间轴一分为二——**左侧灰色是已流逝时间**(随时间向右增长),**右侧蓝色是剩余时间**(随时间向左收缩),窗口重置时灰色占满并归零。时间条与用量条**同高同圆角**(5px / 3px),仅颜色与方向不同;灰段与蓝段各自四角圆角,外侧两端与两段相接处都是圆角。灰段与上方用量条的轨道灰使用同一个主题 token(`--dsw-alias-border-l2`),两条灰上下同色;蓝段用 `--dsw-static-deepseek-450`(`#5686fe`)。用量条(消耗了多少额度)与时间条(过去了多少时间)上下对照,可直接看出额度消耗快于还是慢于时间流逝。悬停显示已流逝/剩余时间百分比。
 - **`/opencode-go` 聊天命令**:在对话中以文本输出同样的三个窗口数字。
 - **同源代理**:host 端注册 `GET /opencode-go/usage`,携带你的 API key 转发到官方 GO 网关。key 永不进入浏览器,也没有 CORS 问题。
@@ -42,9 +46,9 @@ OpenCode GO 网关拒绝缺少 `x-opencode-session` 头的聊天补全请求(`HT
 | 端 | 文件 | 职责 |
 |---|---|---|
 | host(Node) | `lib/index.js` | 注册 `/opencode-go/usage` Web 路由(`ctx.webServer`)与 `/opencode-go` 命令(`ctx.commands`);通过 DSH credentials 解析 key;上游调用带 30s 缓存 |
-| 浏览器 | `lib/client.js` | 手写的 `window.__ModuleLoader__.load({ id, factory })` bundle，等待 `sidebar.footer.action` 列表槽就绪后注册，每 60s 轮询同源路由 |
+| 浏览器 | `lib/client.js` | 手写的 `window.__ModuleLoader__.load({ id, factory })` bundle，等待 `conversation.composer.dock` 列表槽就绪后注册(order 1.5)，挂载 GO 按钮与浮动用量卡片；启动时及卡片打开期间每 5 分钟读取同源路由 |
 
-### 侧边栏小组件如何加载
+### dock 条目如何加载
 
 DSH `0.1.7-rc` 通过官方 client-modules 扫描来装载组件:包的 `dsh.client` 声明 +
 `exports["./client"]` 会按 loader entry 被自动识别,bundle 由 `/plugins/...`
@@ -57,7 +61,8 @@ DSH `0.1.7-rc` 通过官方 client-modules 扫描来装载组件:包的 `dsh.cli
 
 | 插件版本 | DSH 运行时 | host 端 | 浏览器端 |
 |---|---|---|---|
-| **1.5.0**(当前) | `0.1.7` 及以上,含 `0.2.0` 线 | 由 loader 读取导出的 `Config` schema;配置取自插件条目(不再调用 `ctx.settings.register`/`settings.get`) | 由 `client-modules` 依据包的 `dsh.client` 声明自动装配 |
+| **1.6.0**(当前) | `0.1.7` 及以上,含 `0.2.0` 线 | 由 loader 读取导出的 `Config` schema;配置取自插件条目(不再调用 `ctx.settings.register`/`settings.get`) | 由 `client-modules` 装配;`conversation.composer.dock` 中的 GO 按钮 + 悬停/点击弹窗 |
+| 1.5.0 | `0.1.7` 及以上,含 `0.2.0` 线 | 同 1.6.0 | 由 `client-modules` 装配;常驻 `sidebar.footer.action` 小组件,60 秒轮询 |
 | 1.4.0 | `0.1.7-rc.1`、`0.1.7-rc.2` | 同 1.5.0 | 同 1.5.0 |
 | 1.3.3 | `0.1.1-rc.2`、`0.1.2-alpha.2`(即 `0.1.7` 之前的版本线) | `ctx.settings.register` 注册命名空间 + `ctx.settings.get` 读取 | 自托管 bundle 路由 + `webServer.tapIndex` 注入启动图行 |
 
@@ -87,8 +92,8 @@ dsh plugin allow-version     # 为 name@version 在本 dsh 版本上授予精确
   约定声明为 peer 而非 dependency,因此全新安装会解析到 DSH 自带的那份;若 profile 里仍 hoist 着旧的
   `3.18.2`,则不会生成设置页、不能热改,旧的 `~/.dsh/settings.yaml` 段落也不会被迁移(会留在
   `settings.yaml.imported`)。两种情况插件都照常启用,并从 profile 条目读取配置(见[配置项](#配置项))。
-- **小组件** —— 全程无需手工打包或注入 index:host 依据包的 `dsh.client` 声明装配组件,并从
-  `/plugins/...` 组合路由提供(见[侧边栏小组件如何加载](#侧边栏小组件如何加载))。
+- **dock 条目** —— 全程无需手工打包或注入 index:host 依据包的 `dsh.client` 声明装配组件,并从
+  `/plugins/...` 组合路由提供(见[dock 条目如何加载](#dock-条目如何加载))。
 
 ## 环境要求
 
@@ -112,7 +117,7 @@ dsh plugin --profile web add @astervolans/dsh-opencode-go-usage
 # 3. 重启 dsh web,浏览器硬刷新(Cmd/Ctrl+Shift+R)
 ```
 
-到这一步,百分比小组件和 `/opencode-go` 命令就生效了。CLI 会自动把包的
+到这一步,GO 按钮和 `/opencode-go` 命令就生效了。CLI 会自动把包的
 `dsh.bundle.patch` 合并进 profile 的 bundle 层栈——**不需要手改
 cordis.patch.yml,不需要软链**。
 
@@ -149,7 +154,7 @@ dsh plugin --profile web add @astervolans/dsh-opencode-go-usage
 
 ## 使用
 
-- **小组件**:直接看。侧边栏收起 → 百分比徽标;展开 → 三条进度条 + 重置倒计时。
+- **GO 按钮**:悬停(或键盘聚焦)打开卡片,点击固定。它位于 composer dock 行内、余额胶囊左侧,不再占用侧边栏。
 - **命令**:任意对话里输入 `/opencode-go` 输出三个窗口的文本。
 
 ## 配置项
@@ -190,7 +195,7 @@ dsh plugin --profile web add @astervolans/dsh-opencode-go-usage
 }
 ```
 
-## 开发 / 修改小组件
+## 开发 / 修改 dock 条目
 
 浏览器端是**手写的 factory bundle**(`window.__ModuleLoader__.load`),因为目前第三方 client 插件还没有公开的构建流水线。它只能 `require()` shell 模块表里的模块(`react`、`react/jsx-runtime` 以及已注册的 client 包)。直接改 `lib/client.js`,然后重启 `dsh web` 并刷新页面 —— bundle 的 revision hash 会变化,shell 会加载新文件。
 
@@ -198,11 +203,12 @@ host 端(`lib/index.js`)的改动只需重启 `dsh web`。
 
 ## 常见问题
 
-- **重启后小组件不出现** → 硬刷新页面(`Cmd/Ctrl+Shift+R`);启动图是按页面加载注入的。
+- **重启后 GO 按钮不出现** → 硬刷新页面(`Cmd/Ctrl+Shift+R`);启动图是按页面加载注入的。
 - **`/opencode-go/usage` 返回 502 且提示 "no API key"** → 在 `~/.dsh/.credentials.yaml` 配置 key。
 - **网关 401/403** → key 无效或订阅过期;检查 credential。
-- **小组件显示错误串** → 悬停收起态徽标,或展开态小组件里的错误行。
+- **卡片显示错误串** → 悬停 GO 按钮(tooltip 会带同样的错误),或打开卡片读取错误行。
 
 ## License
 
 MIT
+

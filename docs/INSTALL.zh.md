@@ -41,7 +41,7 @@ key 在哪拿:登录 [opencode.ai/auth](https://opencode.ai/auth),在账户页�
 
 ## 第 4 步:验证
 
-- 侧边栏**底部**应该出现一个 "OpenCode GO" 小组件,显示三条用量进度条
+- composer dock 上(会话统计条、余额胶囊旁边)应该出现一个紧凑的 **GO** 按钮;悬停或点击它会打开三条用量进度条的浮动卡片
 - 在对话里输入 `/opencode-go`,会输出三个窗口的用量百分比
 - 命令行验证:`curl http://127.0.0.1:3080/opencode-go/usage` 返回 JSON 即成功
 
@@ -51,6 +51,6 @@ key 在哪拿:登录 [opencode.ai/auth](https://opencode.ai/auth),在账户页�
 
 | 现象 | 原因 | 解决 |
 |---|---|---|
-| 侧边栏没有小组件 | 没重启 / 没刷新页面 | 完全重启 dsh web,再 Cmd/Ctrl+Shift+R 刷新 |
+| composer dock 上没有 GO 按钮 | 没重启 / 没刷新页面 | 完全重启 dsh web,再 Cmd/Ctrl+Shift+R 刷新 |
 | `/opencode-go` 提示 no API key | key 没配 | 检查 `~/.dsh/.credentials.yaml` 里的 `OPENCODE_GO_API_KEY` |
 

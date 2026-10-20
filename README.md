@@ -1,6 +1,6 @@
 # @astervolans/dsh-opencode-go-usage
 
-English | [中文](README.zh.md)
+English | [中文](README.zh.md) | [Русский](README.ru.md)
 
 > ⚡ Get an **OpenCode GO plan**: [buycodingplan.com](https://buycodingplan.com/)
 
@@ -11,17 +11,26 @@ English | [中文](README.zh.md)
 > routes and command name are still `dsh-opencode-go-usage` (unchanged), so migrating from
 > upstream needs no configuration changes; only the `dsh.bundle.patch` entry's `name` must be the
 > resolvable scoped package name, or `dsh web` aborts at startup with `Cannot find package`.
+>
+> **Local layout change (1.6.0):** the permanent sidebar widget is gone. A compact **GO** button
+> now sits on the session statistics strip in the composer dock, left of the balance pill; the
+> quota card opens as a floating popover (hover opens, click pins) with the same three bars.
+> The manual **Refresh** button was removed — quota is read once at startup, refreshed
+> immediately when the card opens on stale data, and re-polled every **5 minutes** while the
+> card is open.
 
 A [DSH](https://github.com/deepseek-ai/deepseek-harness) (DeepSeek Harness) plugin that watches your **OpenCode GO plan** quota — the $10/month subscription that gives you usage limits on open-source models (rolling 5-hour, weekly, and monthly windows).
 
 Compatible with DSH `0.1.7` and above, including the `0.2.0` line — declared in
 `peerDependencies` as `>=0.1.7-rc.1 <0.3.0`, so DSH enforces it. See
-[Compatibility](#compatibility) for the version matrix, what changed in 1.5.0, and what
+[Compatibility](#compatibility) for the version matrix, what changed in 1.6.0, and what
 to do on any other runtime.
 
 ## Features
 
-- **Sidebar widget** — a live widget pinned at the bottom of the DSH web sidebar (`sidebar.footer.action` slot) showing three usage bars: rolling (5h), weekly, and monthly, each with a relative countdown to its window reset. When the sidebar is collapsed it shrinks to a compact percentage badge.
+- **GO button in the composer dock** — a compact `GO` pill on the same strip as the session statistics and the balance pill (`conversation.composer.dock` slot, `order: 1.5`, i.e. just left of the balance pill). It takes one line of the strip instead of a permanent sidebar block. Hovering opens the quota card as a floating popover above the button; clicking the button pins the popover so it survives pointer movement. A second click, Escape, or a click outside dismisses it. Keyboard focus opens it too, and the button exposes the monthly percentage through `aria-label`/`title`.
+- **Quota card** — the popover shows three usage bars: rolling (5h), weekly, and monthly, each with a relative countdown to its window reset and a time bar (see below). It is anchored to the button, clamped to the viewport, re-anchored on resize/scroll, and flips below the button when there is no room above. The anonymous update badge still appears in its header.
+- **Automatic refresh, no Refresh button** — the quota route is read once when the entry mounts (so the button tooltip is already current), read again immediately when the card opens on a snapshot older than 5 minutes, and re-polled every **5 minutes** while the card is open. A closed card keeps the last snapshot and makes no requests.
 - **Time bars** — under each usage bar sits a time bar splitting the window into two: **gray on the left is time already elapsed** (growing rightward) and **blue on the right is time remaining** (shrinking leftward); at reset the gray fills up and starts over. The time bar matches the usage bar exactly in height and radius (5 px / 3 px) and differs only in color and direction; both segments are rounded on all four corners, so the outer ends *and* the junction where they meet are rounded. The gray reuses the quota bar's track token (`--dsw-alias-border-l2`), so both stacked grays are the same shade; the blue segment uses `--dsw-static-deepseek-450` (`#5686fe`). Reading quota used against time elapsed shows at a glance whether you are burning quota faster or slower than the clock. Hover for the elapsed/remaining percentages.
 - **`/opencode-go` chat command** — prints the same numbers as text inside any conversation.
 - **Same-origin proxy** — the host registers `GET /opencode-go/usage`, forwards to the official GO gateway with your API key. The key never reaches the browser and no CORS is involved.
@@ -46,11 +55,11 @@ The plugin is a **dual-half DSH package**:
 | half | file | role |
 |---|---|---|
 | host (Node) | `lib/index.js` | registers the `/opencode-go/usage` web route (`ctx.webServer`) and the `/opencode-go` command (`ctx.commands`); resolves the key through DSH credentials; caches the upstream call (30 s) |
-| browser | `lib/client.js` | a hand-authored `window.__ModuleLoader__.load({ id, factory })` bundle that waits for and registers into the `sidebar.footer.action` list slot, then polls the same-origin route every 60 s |
+| browser | `lib/client.js` | a hand-authored `window.__ModuleLoader__.load({ id, factory })` bundle that waits for and registers into the `conversation.composer.dock` list slot (order 1.5), mounts the GO button + floating quota card, reads the same-origin route at startup and every 5 minutes while the card is open |
 
-### How the sidebar widget loads
+### How the dock entry loads
 
-DSH `0.1.7-rc` composes the widget through the official client-modules scan: the
+DSH `0.1.7-rc` composes the entry through the official client-modules scan: the
 package's `dsh.client` declaration + `exports["./client"]` are picked up per
 loader entry, the bundle is served from the `/plugins/...` combo routes, and
 its boot-graph row lands in the `window.__DSH_BOOT__` manifest by the host
@@ -64,7 +73,8 @@ client-modules only.)
 
 | plugin | DSH runtime | host half | browser half |
 |---|---|---|---|
-| **1.5.0** (current) | `0.1.7` and above, including the `0.2.0` line | `Config` schema read by the loader; config taken from the plugin entry (no `ctx.settings.register`/`settings.get`) | composed by `client-modules` from the package's `dsh.client` declaration |
+| **1.6.0** (current) | `0.1.7` and above, including the `0.2.0` line | `Config` schema read by the loader; config taken from the plugin entry (no `ctx.settings.register`/`settings.get`) | composed by `client-modules`; GO button + hover/click popover in `conversation.composer.dock` |
+| 1.5.0 | `0.1.7` and above, including the `0.2.0` line | same as 1.6.0 | composed by `client-modules`; permanent `sidebar.footer.action` widget, 60 s poll |
 | 1.4.0 | `0.1.7-rc.1`, `0.1.7-rc.2` | same as 1.5.0 | same as 1.5.0 |
 | 1.3.3 | `0.1.1-rc.2`, `0.1.2-alpha.2` (the pre-`0.1.7` line) | `ctx.settings.register` namespace + `ctx.settings.get` reads | self-hosted bundle route + `webServer.tapIndex` boot-graph row |
 
@@ -100,9 +110,9 @@ Two runtime notes for the supported versions:
   migration of a legacy `~/.dsh/settings.yaml` section (that section stays behind in
   `settings.yaml.imported`). Either way the plugin activates and reads its config from the
   profile entry (see [Config reference](#config-reference)).
-- **Widget** — no manual bundling or index injection is involved: the host composes it
+- **Dock entry** — no manual bundling or index injection is involved: the host composes it
   from the package's `dsh.client` declaration and serves it over `/plugins/...`
-  (see [How the sidebar widget loads](#how-the-sidebar-widget-loads)).
+  (see [How the dock entry loads](#how-the-dock-entry-loads)).
 
 ## Requirements
 
@@ -127,7 +137,7 @@ dsh plugin --profile web add @astervolans/dsh-opencode-go-usage
 # 3. restart `dsh web` and hard-refresh the browser page
 ```
 
-That's it for the quota widget and `/opencode-go` command. The CLI reconciles
+That's it for the GO dock button and `/opencode-go` command. The CLI reconciles
 the package's `dsh.bundle.patch` into the profile's bundle stack automatically
 — no manual `cordis.patch.yml` editing, no symlinks.
 
@@ -167,7 +177,7 @@ dsh plugin --profile web add /path/to/dsh-opencode-go-usage
 
 ## Usage
 
-- **Widget**: read it. Collapsed sidebar → percentage badge; expanded → three progress bars with reset countdowns.
+- **GO button**: hover it (or focus it with the keyboard) to open the card, click it to pin. It sits on the composer-dock strip left of the balance pill, so the sidebar is never occupied.
 - **Command**: `/opencode-go` in any conversation prints the three windows as text.
 
 ## Config reference
@@ -180,7 +190,7 @@ configuration and hot-apply without a restart:
 | `apiKeyEnv` | `OPENCODE_GO_API_KEY` | credential reference / env var name for the API key |
 | `baseUrl` | `https://opencode.ai/zen/go` | gateway base URL |
 | `cacheMs` | `30000` | host-side upstream cache TTL |
-| `updateCheck` | `true` | check npm for newer versions (widget + command show a hint; the plugin never self-upgrades) |
+| `updateCheck` | `true` | check npm for newer versions (the card + command show a hint; the plugin never self-upgrades) |
 | `injectSessionHeader` | `true` | inject the runtime `x-opencode-session` header for GO gateway chat calls |
 
 > The volatile marking is guarded: `.volatile()` exists from schemastery 3.18.4,
@@ -210,7 +220,7 @@ configuration and hot-apply without a restart:
 }
 ```
 
-## Developing / modifying the widget
+## Developing / modifying the dock entry
 
 The browser half is a **hand-authored factory bundle** (`window.__ModuleLoader__.load`), because out-of-tree client plugins have no public build pipeline yet. It may only `require()` modules from the shell module table (`react`, `react/jsx-runtime`, and the registered client packages). Edit `lib/client.js` directly, then restart `dsh web` and refresh the page — the bundle revision hash changes and the shell loads the new file.
 
@@ -218,10 +228,10 @@ Host changes (`lib/index.js`) need only a `dsh web` restart.
 
 ## Troubleshooting
 
-- **Widget missing after restart** → hard-refresh the page (`Cmd/Ctrl+Shift+R`); the boot graph is injected per page load.
+- **GO button missing after restart** → hard-refresh the page (`Cmd/Ctrl+Shift+R`); the boot graph is injected per page load.
 - **`/opencode-go/usage` returns 502 with "no API key"** → configure the key in `~/.dsh/.credentials.yaml`.
 - **Gateway 401/403** → the key is invalid or the subscription lapsed; check the credential.
-- **Widget shows an error string** → hover the collapsed badge or read the error line in the expanded widget.
+- **Card shows an error string** → hover the GO button (the tooltip carries the same error) or open the card and read the error line.
 
 ## License
 
