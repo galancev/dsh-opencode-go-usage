@@ -18,12 +18,19 @@ English | [中文](README.zh.md) | [Русский](README.ru.md)
 > The manual **Refresh** button was removed — quota is read once at startup, refreshed
 > immediately when the card opens on stale data, and re-polled every **5 minutes** while the
 > card is open.
+>
+> **DSH 0.2.2 fix (1.6.1):** DSH 0.2.2 gave the composer seat `will-change: transform` (a
+> containing block for `position: fixed`) and the conversation root `overflow: hidden`, which
+> pushed the fixed popover below the viewport. The card is now mounted through a **portal into
+> `document.body`** (using the shell's `react-dom`), so it is positioned against the viewport
+> again; hover/focus continuity across the portal boundary is kept with native listeners on the
+> card. Older shells without `react-dom` fall back to the previous inline render.
 
 A [DSH](https://github.com/deepseek-ai/deepseek-harness) (DeepSeek Harness) plugin that watches your **OpenCode GO plan** quota — the $10/month subscription that gives you usage limits on open-source models (rolling 5-hour, weekly, and monthly windows).
 
 Compatible with DSH `0.1.7` and above, including the `0.2.0` line — declared in
 `peerDependencies` as `>=0.1.7-rc.1 <0.3.0`, so DSH enforces it. See
-[Compatibility](#compatibility) for the version matrix, what changed in 1.6.0, and what
+[Compatibility](#compatibility) for the version matrix, what changed in 1.6.1, and what
 to do on any other runtime.
 
 ## Features
@@ -73,7 +80,8 @@ client-modules only.)
 
 | plugin | DSH runtime | host half | browser half |
 |---|---|---|---|
-| **1.6.0** (current) | `0.1.7` and above, including the `0.2.0` line | `Config` schema read by the loader; config taken from the plugin entry (no `ctx.settings.register`/`settings.get`) | composed by `client-modules`; GO button + hover/click popover in `conversation.composer.dock` |
+| **1.6.1** (current) | `0.1.7` and above, including the `0.2.0` line | `Config` schema read by the loader; config taken from the plugin entry (no `ctx.settings.register`/`settings.get`) | composed by `client-modules`; GO button + hover/click popover portaled to `document.body` (DSH 0.2.2 fix) |
+| 1.6.0 | `0.1.7` and above, including the `0.2.0` line | same as 1.6.1 | composed by `client-modules`; GO button + hover/click popover in `conversation.composer.dock` |
 | 1.5.0 | `0.1.7` and above, including the `0.2.0` line | same as 1.6.0 | composed by `client-modules`; permanent `sidebar.footer.action` widget, 60 s poll |
 | 1.4.0 | `0.1.7-rc.1`, `0.1.7-rc.2` | same as 1.5.0 | same as 1.5.0 |
 | 1.3.3 | `0.1.1-rc.2`, `0.1.2-alpha.2` (the pre-`0.1.7` line) | `ctx.settings.register` namespace + `ctx.settings.get` reads | self-hosted bundle route + `webServer.tapIndex` boot-graph row |
@@ -236,3 +244,4 @@ Host changes (`lib/index.js`) need only a `dsh web` restart.
 ## License
 
 MIT
+

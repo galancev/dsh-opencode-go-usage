@@ -1,6 +1,6 @@
 {
   "name": "@astervolans/dsh-opencode-go-usage",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "DSH (DeepSeek Harness) plugin: OpenCode GO plan quota GO button in the composer dock with a hover/click popover, same-origin usage proxy, and a /opencode-go chat command (DSH 0.1.7+ and 0.2.0 compatible)",
   "type": "module",
   "main": "lib/index.js",

@@ -28,6 +28,7 @@ const jsxRuntime = require("react/jsx-runtime");
 
 /** Loaded after the jsdom globals exist (react-dom probes `canUseDOM` once). */
 let ReactDOMClient;
+let ReactDOM;
 let act;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -76,13 +77,14 @@ function setupDom() {
   setGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   if (ReactDOMClient === undefined) {
     ReactDOMClient = require("react-dom/client");
+    ReactDOM = require("react-dom");
     act = React.act;
   }
   return { dom, window, document: window.document };
 }
 
 /** Execute the shipped bundle and return its module exports. */
-function loadBundle(window) {
+function loadBundle(window, { withReactDom = true } = {}) {
   let captured = null;
   window.__ModuleLoader__ = { load: (definition) => { captured = definition; } };
   window.eval(BUNDLE);
@@ -91,6 +93,7 @@ function loadBundle(window) {
   return captured.factory((id) => {
     if (id === "react") return React;
     if (id === "react/jsx-runtime") return jsxRuntime;
+    if (id === "react-dom" && withReactDom) return ReactDOM;
     throw new Error("unexpected require: " + id);
   });
 }
@@ -177,7 +180,8 @@ async function renderEntry(state, props) {
     container,
     root,
     button: () => container.querySelector("[data-ocg-dock]"),
-    popover: () => container.querySelector("[data-ocg-popover]")
+    // The card is portaled to document.body, not nested in the dock container.
+    popover: () => document.querySelector("[data-ocg-popover]")
   };
 }
 
@@ -199,6 +203,13 @@ async function pressKey(key) {
 async function hoverOpen(handles) {
   await fire(handles.button(), "mouseover", { relatedTarget: document.body });
   await act(async () => { await sleep(0); });
+}
+
+/** Cross the visual gap into the card: native mouseenter on the portaled node. */
+async function enterPopover(popover) {
+  await act(async () => {
+    popover.dispatchEvent(new (globalThis.MouseEvent)("mouseenter"));
+  });
 }
 
 /** Unmount, close the jsdom realm and restore nothing (next setup resets globals). */
@@ -325,8 +336,10 @@ test("hovering from the button into the card keeps it open", async () => {
   try {
     await hoverOpen(handles);
     const popover = handles.popover();
-    // Pointer leaves the button towards the card (still inside the root span).
+    // Pointer leaves the button towards the card; entering the portaled node
+    // must cancel the pending close even though it is not a DOM descendant.
     await fire(handles.button(), "mouseout", { relatedTarget: popover });
+    await enterPopover(popover);
     await act(async () => { await sleep(260); });
     assert.ok(handles.popover() !== null, "card must survive crossing the hover bridge");
   } finally {
@@ -405,6 +418,72 @@ test("a mousedown outside the entry closes a pinned card", async () => {
     assert.ok(handles.popover() !== null);
     await fire(document.body, "mousedown");
     assert.equal(handles.popover(), null, "outside click must dismiss the card");
+  } finally {
+    await teardown(handles, dom);
+  }
+});
+
+test("falls back to an inline card when the shell has no react-dom", async () => {
+  const { dom, window } = setupDom();
+  const exports = loadBundle(window, { withReactDom: false });
+  const state = applyPlugin(exports);
+  const t = makeT(state.dictionaries[0].dict.en);
+  window.fetch = makeFetch();
+  const handles = await renderEntry(state, { t });
+  try {
+    await hoverOpen(handles);
+    const popover = handles.popover();
+    assert.ok(popover !== null, "fallback must still render the card");
+    assert.ok(handles.container.contains(popover), "fallback keeps the card inside the dock tree");
+    assert.notEqual(popover.parentElement, document.body);
+  } finally {
+    await teardown(handles, dom);
+  }
+});
+
+test("portals the card to the body so transformed/clipped ancestors cannot trap it", async () => {
+  const { dom, window } = setupDom();
+  const exports = loadBundle(window);
+  const state = applyPlugin(exports);
+  const t = makeT(state.dictionaries[0].dict.en);
+  window.fetch = makeFetch();
+  const handles = await renderEntry(state, { t });
+  try {
+    // Simulate the DSH 0.2.2 conversation root: the composer seat creates a
+    // containing block for fixed descendants (will-change: transform) and the
+    // root clips overflow — an in-tree popover would be positioned relative to
+    // the seat and appear far below the viewport.
+    const seat = document.createElement("div");
+    seat.style.willChange = "transform";
+    seat.style.overflow = "hidden";
+    document.body.appendChild(seat);
+    seat.appendChild(handles.container);
+
+    await hoverOpen(handles);
+    const popover = handles.popover();
+    assert.ok(popover !== null);
+    assert.equal(popover.parentElement, document.body, "card must be portaled to body");
+    assert.equal(popover.closest("[data-composer-dock]"), null, "card must not live inside the dock tree");
+    assert.equal(handles.container.querySelector("[data-ocg-popover]"), null);
+  } finally {
+    await teardown(handles, dom);
+  }
+});
+
+test("a mousedown inside the portaled card does not dismiss it", async () => {
+  const { dom, window } = setupDom();
+  const exports = loadBundle(window);
+  const state = applyPlugin(exports);
+  const t = makeT(state.dictionaries[0].dict.en);
+  window.fetch = makeFetch();
+  const handles = await renderEntry(state, { t });
+  try {
+    await fire(handles.button(), "click");
+    await act(async () => { await sleep(0); });
+    const popover = handles.popover();
+    assert.ok(popover !== null);
+    await fire(popover.querySelector(".ocg-card"), "mousedown");
+    assert.ok(handles.popover() !== null, "clicking inside the card must keep it open");
   } finally {
     await teardown(handles, dom);
   }

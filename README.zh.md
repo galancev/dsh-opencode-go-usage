@@ -11,11 +11,13 @@
 > 仅 `dsh.bundle.patch` 的 `name` 必须是可解析的包名(scoped),否则 `dsh web` 会在启动时报 `Cannot find package`。
 >
 > **本地布局改动(1.6.0):** 常驻侧边栏小组件已移除。会话统计条上新增一个紧凑的 **GO** 按钮(位于余额胶囊左侧);用量卡片改为浮动弹窗(悬停打开、点击固定)。手动 **刷新** 按钮已删除——启动时读取一次,卡片以过期数据打开时立即刷新,卡片打开期间每 **5 分钟** 轮询一次。
+>
+> **DSH 0.2.2 修复(1.6.1):** DSH 0.2.2 给 composer seat 加了 `will-change: transform`(会成为 `position: fixed` 的包含块),并给会话根节点加了 `overflow: hidden`,导致弹窗按底部的 seat 定位、跑到可视区域下方。现在卡片通过 **portal 挂载到 `document.body`**(使用 shell 的 `react-dom`),重新相对视口定位;跨 portal 边界的悬停/焦点用卡片上的原生监听器保持。没有 `react-dom` 的旧 shell 会自动回退到原来的 inline 渲染。
 
 [DSH](https://github.com/deepseek-ai/deepseek-harness)(DeepSeek Harness)插件:监控你的 **OpenCode GO 套餐**额度 —— 10 美元/月的订阅,按模型提供滚动 5 小时 / 每周 / 每月三个窗口的用量限额。
 
 兼容 DSH `0.1.7` 及以上(含 `0.2.0` 线) —— 已写入 `peerDependencies`(`>=0.1.7-rc.1 <0.3.0`),
-由 DSH 校验。版本矩阵、1.6.0 的改动,以及其他运行时怎么办,见[兼容性](#兼容性)。
+由 DSH 校验。版本矩阵、1.6.1 的改动,以及其他运行时怎么办,见[兼容性](#兼容性)。
 
 ## 功能
 
@@ -61,7 +63,8 @@ DSH `0.1.7-rc` 通过官方 client-modules 扫描来装载组件:包的 `dsh.cli
 
 | 插件版本 | DSH 运行时 | host 端 | 浏览器端 |
 |---|---|---|---|
-| **1.6.0**(当前) | `0.1.7` 及以上,含 `0.2.0` 线 | 由 loader 读取导出的 `Config` schema;配置取自插件条目(不再调用 `ctx.settings.register`/`settings.get`) | 由 `client-modules` 装配;`conversation.composer.dock` 中的 GO 按钮 + 悬停/点击弹窗 |
+| **1.6.1**(当前) | `0.1.7` 及以上,含 `0.2.0` 线 | 由 loader 读取导出的 `Config` schema;配置取自插件条目(不再调用 `ctx.settings.register`/`settings.get`) | 由 `client-modules` 装配;GO 按钮 + 悬停/点击弹窗,弹窗通过 portal 挂到 `document.body`(DSH 0.2.2 修复) |
+| 1.6.0 | `0.1.7` 及以上,含 `0.2.0` 线 | 同 1.6.1 | 由 `client-modules` 装配;`conversation.composer.dock` 中的 GO 按钮 + 悬停/点击弹窗 |
 | 1.5.0 | `0.1.7` 及以上,含 `0.2.0` 线 | 同 1.6.0 | 由 `client-modules` 装配;常驻 `sidebar.footer.action` 小组件,60 秒轮询 |
 | 1.4.0 | `0.1.7-rc.1`、`0.1.7-rc.2` | 同 1.5.0 | 同 1.5.0 |
 | 1.3.3 | `0.1.1-rc.2`、`0.1.2-alpha.2`(即 `0.1.7` 之前的版本线) | `ctx.settings.register` 注册命名空间 + `ctx.settings.get` 读取 | 自托管 bundle 路由 + `webServer.tapIndex` 注入启动图行 |
@@ -211,4 +214,5 @@ host 端(`lib/index.js`)的改动只需重启 `dsh web`。
 ## License
 
 MIT
+
 
