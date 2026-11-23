@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Release helper: bump version, commit, tag, push. GitHub Actions then
-# publishes to npm via trusted publishing (OIDC) — no token or secret involved.
-# See docs/RELEASE.md for the one-time setup.
+# Release helper: bump version, commit, tag, push.
+#
+# The pushed tag alone publishes nothing — create a GitHub Release for it
+# (`gh release create vX.Y.Z`), and release-package.yml publishes the version
+# to GitHub Packages. The plugin's update check reads that same Release.
+# See docs/RELEASE.md.
 #
 # Usage:
 #   ./scripts/release.sh          # patch: 1.3.0 -> 1.3.1
@@ -9,8 +12,7 @@
 #   ./scripts/release.sh major    # major: 1.3.0 -> 2.0.0
 #
 # Prerequisites:
-#   - repo has an `origin` remote (https, with GitHub auth configured)
-#   - npm trusted publisher configured for this repo (see docs/RELEASE.md)
+#   - repo has an `origin` remote (git@github.com:galancev/dsh-opencode-go-usage.git)
 set -euo pipefail
 
 LEVEL="${1:-patch}"
@@ -26,13 +28,15 @@ NEW_VERSION="$(npm version "$LEVEL" --no-git-tag-version)"
 echo "→ bump: $NEW_VERSION"
 
 # 2. commit the version bump
-git add package.json
+git add package.json package-lock.json
 git commit -m "chore: release $NEW_VERSION"
 
-# 3. tag and push (the tag triggers the npm publish workflow)
+# 3. tag and push
 git tag "$NEW_VERSION"
 git push origin main
 git push origin "$NEW_VERSION"
 
-echo "✓ released $NEW_VERSION — GitHub Actions is publishing to npm now."
-echo "  watch: https://github.com/yumusb/dsh-opencode-go-usage/actions"
+echo "✓ released $NEW_VERSION"
+echo "  next: create the GitHub Release (it publishes to GitHub Packages):"
+echo "  gh release create v$NEW_VERSION --generate-notes"
+echo "  watch: https://github.com/galancev/dsh-opencode-go-usage/actions"

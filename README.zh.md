@@ -1,13 +1,12 @@
-# @astervolans/dsh-opencode-go-usage
+# @galancev/dsh-opencode-go-usage
 
 [English](README.md) | 中文 | [Русский](README.ru.md)
 
 > ⚡ **OpenCode GO 套餐**: [buycodingplan.com](https://buycodingplan.com/)
 
-> **这是 [yumusb/dsh-opencode-go-usage](https://github.com/yumusb/dsh-opencode-go-usage) 的 fork**
-> ([Astervolans/dsh-opencode-go-usage](https://github.com/Astervolans/dsh-opencode-go-usage)),
-> 发布为 scoped 包 `@astervolans/dsh-opencode-go-usage`。相对上游的差异:**每条用量进度条下方新增一条时间进度条**(见「功能」)。
-> 插件的设置命名空间、HTTP 路由与命令名仍是 `dsh-opencode-go-usage`(不变),所以从上游迁移过来无需改动配置;
+> **仓库:** [galancev/dsh-opencode-go-usage](https://github.com/galancev/dsh-opencode-go-usage)
+> —— 本插件唯一的来源,发布为 scoped 包 `@galancev/dsh-opencode-go-usage`。
+> 插件的设置命名空间、HTTP 路由与命令名仍是 `dsh-opencode-go-usage`;
 > 仅 `dsh.bundle.patch` 的 `name` 必须是可解析的包名(scoped),否则 `dsh web` 会在启动时报 `Cannot find package`。
 >
 > **本地布局改动(1.6.0):** 常驻侧边栏小组件已移除。会话统计条上新增一个紧凑的 **GO** 按钮(位于余额胶囊左侧);用量卡片改为浮动弹窗(悬停打开、点击固定)。手动 **刷新** 按钮已删除——启动时读取一次,卡片以过期数据打开时立即刷新,卡片打开期间每 **5 分钟** 轮询一次。
@@ -109,8 +108,9 @@ dsh plugin allow-version     # 为 name@version 在本 dsh 版本上授予精确
 前置:已装 DSH `0.1.7` 及以上(含 `0.2.0` 线),且 `web` profile 至少启动过一次;Node.js ≥ 18;有 OpenCode GO 订阅。
 
 ```bash
-# 1. 安装到 web profile(依赖 pnpm,没有的话先 corepack enable)
-dsh plugin --profile web add @astervolans/dsh-opencode-go-usage
+# 1. 把仓库装进 web profile(依赖 pnpm,没有的话先 corepack enable)
+git clone https://github.com/galancev/dsh-opencode-go-usage.git
+dsh plugin --profile web add link:/仓库的绝对路径/dsh-opencode-go-usage
 
 # 2. 把 GO API key 存为 DSH credential
 #    (key 在 https://opencode.ai/auth 创建)
@@ -124,12 +124,6 @@ dsh plugin --profile web add @astervolans/dsh-opencode-go-usage
 `dsh.bundle.patch` 合并进 profile 的 bundle 层栈——**不需要手改
 cordis.patch.yml,不需要软链**。
 
-还没发布 npm?从本地目录安装:
-
-```bash
-dsh plugin --profile web add /path/to/dsh-opencode-go-usage
-```
-
 ### 从 GitHub Packages 安装
 
 每次发布也会自动同步到 GitHub Packages(`https://npm.pkg.github.com`),由 release
@@ -137,21 +131,21 @@ dsh plugin --profile web add /path/to/dsh-opencode-go-usage
 权限的 PAT,写进 `.npmrc`(项目级或 `~/.npmrc`):
 
 ```
-@astervolans:registry=https://npm.pkg.github.com
+@galancev:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=你的_GITHUB_PAT
 ```
 
 ```bash
-dsh plugin --profile web add @astervolans/dsh-opencode-go-usage
+dsh plugin --profile web add @galancev/dsh-opencode-go-usage
 ```
 
 选择这条路之前先了解两点:
 
 - 包在 GitHub 上**默认是 private**(仓库公开也一样),首次发布后需要手动改成 public:
-  [包设置](https://github.com/users/Astervolans/packages/npm/dsh-opencode-go-usage/settings)
+  [包设置](https://github.com/users/galancev/packages/npm/dsh-opencode-go-usage/settings)
   → Danger Zone → Change visibility。
-- 安装需要 token,所以 npmjs.org(不需要 token、不需要 scope 行)仍是更省事的路。
-  GitHub Packages 是镜像,不是替代。
+- 安装需要 token,所以直接用上面的 link 方式装 checkout 更省事。
+  GitHub Packages 是带版本号的选择。
 
 > 第一次装 DSH 插件?直接看[使用者指南](docs/INSTALL.zh.md),一步步照着做就行。
 
@@ -169,7 +163,7 @@ dsh plugin --profile web add @astervolans/dsh-opencode-go-usage
 | `apiKeyEnv` | `OPENCODE_GO_API_KEY` | API key 的 credential 引用 / 环境变量名 |
 | `baseUrl` | `https://opencode.ai/zen/go` | 网关 base URL |
 | `cacheMs` | `30000` | host 端上游缓存 TTL |
-| `updateCheck` | `true` | 检查 npm 新版本(组件与命令只提示,插件不会自行升级) |
+| `updateCheck` | `true` | 检查仓库的 GitHub Releases 新版本(组件与命令只提示,插件不会自行升级) |
 | `injectSessionHeader` | `true` | 为 GO 网关聊天调用注入运行时 `x-opencode-session` 头 |
 
 > volatile 标记是**带守卫**的:`.volatile()` 从 schemastery 3.18.4 起才有,而 DSH

@@ -1,16 +1,14 @@
-# @astervolans/dsh-opencode-go-usage
+# @galancev/dsh-opencode-go-usage
 
 English | [中文](README.zh.md) | [Русский](README.ru.md)
 
 > ⚡ Get an **OpenCode GO plan**: [buycodingplan.com](https://buycodingplan.com/)
 
-> **This is a fork of [yumusb/dsh-opencode-go-usage](https://github.com/yumusb/dsh-opencode-go-usage)**
-> ([Astervolans/dsh-opencode-go-usage](https://github.com/Astervolans/dsh-opencode-go-usage)),
-> published as the scoped package `@astervolans/dsh-opencode-go-usage`. The difference from
-> upstream: **a time bar under each usage bar** (see Features). The settings namespace, HTTP
-> routes and command name are still `dsh-opencode-go-usage` (unchanged), so migrating from
-> upstream needs no configuration changes; only the `dsh.bundle.patch` entry's `name` must be the
-> resolvable scoped package name, or `dsh web` aborts at startup with `Cannot find package`.
+> **Repository:** [galancev/dsh-opencode-go-usage](https://github.com/galancev/dsh-opencode-go-usage)
+> — the single source of this plugin, published as the scoped package
+> `@galancev/dsh-opencode-go-usage`. The settings namespace, HTTP routes and command name are
+> `dsh-opencode-go-usage`; the `dsh.bundle.patch` entry's `name` must be the resolvable scoped
+> package name, or `dsh web` aborts at startup with `Cannot find package`.
 >
 > **Local layout change (1.6.0):** the permanent sidebar widget is gone. A compact **GO** button
 > now sits on the session statistics strip in the composer dock, left of the balance pill; the
@@ -133,9 +131,12 @@ Two runtime notes for the supported versions:
 Requirements: DSH `0.1.7` or newer, including the `0.2.0` line, installed with the `web`
 profile booted once, Node.js ≥ 18, an OpenCode GO subscription.
 
+The package is distributed from this repository, so install it as a linked checkout:
+
 ```bash
-# 1. install the package into your web profile (pnpm; enable via corepack if needed)
-dsh plugin --profile web add @astervolans/dsh-opencode-go-usage
+# 1. install the repository into your web profile (pnpm; enable via corepack if needed)
+git clone https://github.com/galancev/dsh-opencode-go-usage.git
+dsh plugin --profile web add link:/absolute/path/to/dsh-opencode-go-usage
 
 # 2. store your GO API key as a DSH credential
 #    (create the key at https://opencode.ai/auth)
@@ -158,29 +159,22 @@ registry requires authentication **even for public packages**, so add an `.npmrc
 `read:packages`:
 
 ```
-@astervolans:registry=https://npm.pkg.github.com
+@galancev:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=YOUR_GITHUB_PAT
 ```
 
 ```bash
-dsh plugin --profile web add @astervolans/dsh-opencode-go-usage
+dsh plugin --profile web add @galancev/dsh-opencode-go-usage
 ```
 
 Two things to know before choosing this route:
 
 - The package is **private by default** on GitHub, even though the repository is
   public. The first release has to be flipped to public once, at
-  [package settings](https://github.com/users/Astervolans/packages/npm/dsh-opencode-go-usage/settings)
+  [package settings](https://github.com/users/galancev/packages/npm/dsh-opencode-go-usage/settings)
   → Danger Zone → Change visibility.
-- Because installation needs a token, npmjs.org (no token, no scope line) stays
-  the friendlier path. GitHub Packages is a mirror, not a replacement.
-
-### From a checkout
-
-```bash
-dsh plugin --profile web add /path/to/dsh-opencode-go-usage
-```
-
+- Because installation needs a token, a linked checkout (above) stays the
+  simpler local path. GitHub Packages is the versioned alternative.
 > New to DSH plugins? Follow the [user guide](docs/INSTALL.zh.md) (Chinese, step-by-step).
 
 ## Usage
@@ -198,7 +192,7 @@ configuration and hot-apply without a restart:
 | `apiKeyEnv` | `OPENCODE_GO_API_KEY` | credential reference / env var name for the API key |
 | `baseUrl` | `https://opencode.ai/zen/go` | gateway base URL |
 | `cacheMs` | `30000` | host-side upstream cache TTL |
-| `updateCheck` | `true` | check npm for newer versions (the card + command show a hint; the plugin never self-upgrades) |
+| `updateCheck` | `true` | check the repository's GitHub Releases for newer versions (the card + command show a hint; the plugin never self-upgrades) |
 | `injectSessionHeader` | `true` | inject the runtime `x-opencode-session` header for GO gateway chat calls |
 
 > The volatile marking is guarded: `.volatile()` exists from schemastery 3.18.4,

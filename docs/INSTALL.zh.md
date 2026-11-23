@@ -1,4 +1,4 @@
-# @astervolans/dsh-opencode-go-usage 使用者指南
+# @galancev/dsh-opencode-go-usage 使用者指南
 
 给"想用这个插件的人"看的傻瓜式安装步骤。全程不需要写代码。
 
@@ -14,15 +14,17 @@
 
 ## 第 1 步:安装(一条命令)
 
-在终端执行:
+插件从仓库分发,先克隆再以 link 方式装进 profile:
 
 ```bash
-dsh plugin --profile web add @astervolans/dsh-opencode-go-usage
+git clone https://github.com/galancev/dsh-opencode-go-usage.git
+dsh plugin --profile web add link:/克隆下来的绝对路径/dsh-opencode-go-usage
 ```
 
 > - 如果提示 `pnpm not found`,先执行 `corepack enable` 启用 pnpm 再试
-> - 如果还没发布到 npm,把包名换成插件源码目录的绝对路径,例如:
->   `dsh plugin --profile web add ~/dsh-opencode-go-usage`
+> - 如果包已经发到 GitHub Packages,也可以直接用 scoped 包名:
+>   `dsh plugin --profile web add @galancev/dsh-opencode-go-usage`
+>   (需先在 `.npmrc` 配好 `@galancev:registry=https://npm.pkg.github.com` 和 token)
 > - 这条命令会自动完成注册,不需要手动改任何配置文件
 
 ## 第 2 步:配置你的 API key(必须)

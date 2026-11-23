@@ -1,4 +1,4 @@
-# @astervolans/dsh-opencode-go-usage
+# @galancev/dsh-opencode-go-usage
 
 [English](README.md) | [中文](README.zh.md) | Русский
 
@@ -8,10 +8,10 @@
 который показывает расход квоты **плана OpenCode GO** — подписки за $10/мес с лимитами
 на опенсорсные модели по трём окнам: скользящее 5-часовое, недельное и месячное.
 
-Это форк [yumusb/dsh-opencode-go-usage](https://github.com/yumusb/dsh-opencode-go-usage)
-([Astervolans/dsh-opencode-go-usage](https://github.com/Astervolans/dsh-opencode-go-usage)),
-опубликованный как scoped-пакет `@astervolans/dsh-opencode-go-usage`. Отличие от upstream:
-под каждой полосой расхода есть **полоса времени окна** (см. ниже).
+**Репозиторий:** [galancev/dsh-opencode-go-usage](https://github.com/galancev/dsh-opencode-go-usage) —
+единственный источник плагина, пакет `@galancev/dsh-opencode-go-usage`. Пространство настроек,
+HTTP-маршруты и имя команды — `dsh-opencode-go-usage`; поле `name` в `dsh.bundle.patch` должно
+быть резолвящимся именем scoped-пакета, иначе `dsh web` падает на старте с `Cannot find package`.
 
 Текущая локальная версия — **1.6.1**.
 
@@ -55,8 +55,8 @@
   Полосы времени совпадают с полосами квоты по высоте и радиусу (5 px / 3 px), поэтому
   видно, быстрее или медленнее времени расходуется квота. Наведение на полосу времени
   показывает проценты «прошло/осталось».
-- В заголовке карточки остаётся бейдж анонимной проверки обновлений npm; сам плагин
-  никогда не обновляется автоматически.
+- В заголовке карточки остаётся бейдж анонимной проверки обновлений (GitHub Releases); сам
+  плагин никогда не обновляется автоматически.
 - **Команда `/opencode-go`** — выводит те же три окна текстом в любом диалоге.
 - **Same-origin прокси** — host-половина регистрирует `GET /opencode-go/usage` и
   проксирует запрос к официальному шлюзу GO с вашим API-ключом. Ключ не попадает в
@@ -67,20 +67,20 @@
 
 ## Установка
 
+Плагин распространяется из этого репозитория, поэтому ставится как привязанный checkout:
+
 ```bash
-# 1. установить пакет в профиль web (pnpm; при необходимости corepack enable)
-dsh plugin --profile web add @astervolans/dsh-opencode-go-usage
+# 1. поставить репозиторий в профиль web (pnpm; при необходимости corepack enable)
+git clone https://github.com/galancev/dsh-opencode-go-usage.git
+dsh plugin --profile web add link:/абсолютный/путь/к/dsh-opencode-go-usage
 
 # 2. положить ключ в ~/.dsh/.credentials.yaml
 #    OPENCODE_GO_API_KEY: sk-...
 # 3. полностью перезапустить dsh web и жёстко обновить страницу
 ```
 
-Для локальной папки с исходниками:
-
-```bash
-dsh plugin --profile web add /path/to/dsh-opencode-go-usage
-```
+Версии также публикуются в GitHub Packages — см. раздел Install в
+[README.md](README.md#install-official-dsh-flow).
 
 Ключ API берётся из credential-ссылки `OPENCODE_GO_API_KEY` (настраивается полем
 `apiKeyEnv`). Полная ссылка на руководство: [docs/INSTALL.zh.md](docs/INSTALL.zh.md)
@@ -96,7 +96,7 @@ Settings → Plugins → Plugin configuration без перезапуска:
 | `apiKeyEnv` | `OPENCODE_GO_API_KEY` | credential-ссылка / имя переменной окружения с ключом |
 | `baseUrl` | `https://opencode.ai/zen/go` | базовый URL шлюза GO |
 | `cacheMs` | `30000` | TTL host-кэша апстрим-запроса |
-| `updateCheck` | `true` | проверять npm на новые версии (подсказка в карточке и команде) |
+| `updateCheck` | `true` | проверять GitHub Releases репозитория на новые версии (подсказка в карточке и команде) |
 | `injectSessionHeader` | `true` | подставлять `x-opencode-session` в запросы чата GO |
 
 ## Разработка

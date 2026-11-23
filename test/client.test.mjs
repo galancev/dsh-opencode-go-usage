@@ -89,7 +89,7 @@ function loadBundle(window, { withReactDom = true } = {}) {
   window.__ModuleLoader__ = { load: (definition) => { captured = definition; } };
   window.eval(BUNDLE);
   assert.ok(captured !== null, "bundle must call __ModuleLoader__.load");
-  assert.equal(captured.id, "@astervolans/dsh-opencode-go-usage");
+  assert.equal(captured.id, "@galancev/dsh-opencode-go-usage");
   return captured.factory((id) => {
     if (id === "react") return React;
     if (id === "react/jsx-runtime") return jsxRuntime;
@@ -229,7 +229,7 @@ test("registers only the composer-dock entry, between statistics and balance", a
     assert.equal(state.registrations.length, 1);
     const { entry } = state.registrations[0];
     assert.equal(entry.name, "conversation.composer.dock");
-    assert.equal(entry.id, "@astervolans/dsh-opencode-go-usage");
+    assert.equal(entry.id, "@galancev/dsh-opencode-go-usage");
     assert.equal(entry.order, 1.5);
     assert.equal(entry.label, "OpenCode GO");
     assert.equal(entry.locale, "dsh-opencode-go-usage");

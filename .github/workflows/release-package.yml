@@ -1,15 +1,12 @@
 name: Node.js Package
 
-# Publishes @astervolans/dsh-opencode-go-usage to GitHub Packages when a release
+# Publishes @galancev/dsh-opencode-go-usage to GitHub Packages when a release
 # is created, following the GitHub Packages quickstart (build -> publish-gpr).
 #
-# Why this exists next to `npm-publish.yml`: that workflow is inherited from
-# upstream and is guarded `if: github.repository == 'yumusb/...'`, i.e. an
-# explicit no-op in this fork, because npm Trusted Publishing (OIDC) is bound to
-# the upstream repository and a fork is not in the trusted-publisher allow-list.
-# GitHub Packages has no such binding: `GITHUB_TOKEN` with `packages: write`
-# can publish into this repository owner's namespace, so this path needs no
-# secret, no OIDC allow-list and no manual `npm publish`.
+# `GITHUB_TOKEN` with `packages: write` publishes into this repository owner's
+# namespace, so this path needs no secret, no OIDC allow-list and no manual
+# `npm publish`. The npmjs job below is opt-in and also runs through this same
+# workflow (trusted publishing), so a release never depends on secrets.
 #
 # `workflow_dispatch` is added so the pipeline can be exercised by hand; the
 # publish step is idempotent, so re-running an already-published version is a
@@ -57,19 +54,19 @@ jobs:
           fi
           echo "Releasing $PKG"
 
-      - name: NPM_PACKAGE must match package.json
-        # The runtime asks registry.npmjs.org for the latest version of this
+      - name: RELEASE_REPO must match package.json
+        # The runtime asks GitHub Releases for the latest version of this
         # constant, so a rename that forgets it would silently never find an
         # update again.
         run: |
           set -euo pipefail
-          PKG="$(node -p "require('./package.json').name")"
-          if ! grep -q "const NPM_PACKAGE = \"$PKG\";" lib/index.js; then
-            echo "::error::lib/index.js NPM_PACKAGE does not match package.json name ($PKG)"
-            grep -n 'NPM_PACKAGE' lib/index.js >&2
+          SLUG="$(node -p "require('./package.json').repository.replace(/^github:/, '')")"
+          if ! grep -q "const RELEASE_REPO = \"$SLUG\";" lib/index.js; then
+            echo "::error::lib/index.js RELEASE_REPO does not match package.json repository ($SLUG)"
+            grep -n 'RELEASE_REPO' lib/index.js >&2
             exit 1
           fi
-          echo "NPM_PACKAGE matches: $PKG"
+          echo "RELEASE_REPO matches: $SLUG"
 
       - name: Syntax-check every shipped module
         run: |
@@ -121,15 +118,15 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v6
 
-      - name: Set up Node.js and authenticate the @astervolans scope
+      - name: Set up Node.js and authenticate the @galancev scope
         # Pointing `registry-url` at GitHub Packages makes setup-node write
         #
-        #   @astervolans:registry=https://npm.pkg.github.com/
+        #   @galancev:registry=https://npm.pkg.github.com/
         #   //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
         #
         # into $RUNNER_TEMP/.npmrc and export NPM_CONFIG_USERCONFIG for the
         # following steps. The scope is inferred from the repository owner
-        # (`Astervolans` -> `@astervolans`) and lowercased, so no `scope` input
+        # (`galancev` -> `@galancev`) and lowercased, so no `scope` input
         # is needed. Only the scope is remapped — the default registry stays
         # npmjs.org, so a committed routing `.npmrc` is unnecessary and would
         # hijack `npm publish` to npmjs.org for this same scope.
@@ -160,7 +157,7 @@ jobs:
 
           npm publish
           echo "::notice::published $PKG@$VER to GitHub Packages"
-          echo "https://github.com/Astervolans/dsh-opencode-go-usage/pkgs/npm/dsh-opencode-go-usage"
+          echo "https://github.com/galancev/dsh-opencode-go-usage/pkgs/npm/dsh-opencode-go-usage"
 
   publish-npmjs:
     name: Publish to npmjs.org
@@ -170,10 +167,10 @@ jobs:
     # `docs/RELEASE.md` currently documents as a manual `npm publish`.
     #
     # To enable: configure a trusted publisher at
-    #   https://www.npmjs.com/package/@astervolans/dsh-opencode-go-usage
+    #   https://www.npmjs.com/package/@galancev/dsh-opencode-go-usage
     #   -> Settings -> Trusted Publisher
     # with "GitHub Actions" and
-    #   Organization or user: Astervolans
+    #   Organization or user: galancev
     #   Repository:           dsh-opencode-go-usage
     #   Workflow filename:    release-package.yml
     # then set the repository variable NPMJS_TRUSTED_PUBLISHING=true
